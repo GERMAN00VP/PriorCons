@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "priorcons"
-version = "0.2.1"
+version = "0.1.0"
 description = "Tool for the integration of viral consensus sequences obtained by de novo and mapping strategies, supported by prior information."
 readme = "README.md"
 license = { file = "LICENSE" }

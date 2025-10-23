@@ -20,7 +20,6 @@ Usage:
   priorcons <subcommand> [options]
 
 Available subcommands:
-  remove-frameshifts   Remove frameshifts from an alignment
   build-priors         Build priors parquet file
   integrate-consensus   Run consensus integration workflow
 
