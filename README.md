@@ -106,12 +106,13 @@ The script produces **three files** inside `--output_dir`:
 
 ### ▶️ Example run
 
-----
+```bash
 python integrate_consensus.py \
   --input /path/to/250694-RSVWGS.aln \
   --ref RSV_BD \
   --prior /path/to/RSVBD_win100_ovlp50_priors.parquet \
   --output_dir results
+```
 ----
 
 This will generate:  
@@ -137,13 +138,14 @@ These priors are later used by `integrate_consensus.py` to evaluate windows.
 
 ### ▶️ Example run
 
-----
+```bash
 python build_priors.py \
   -i alignment.fasta \
   -r ReferenceID \
   -o priors.parquet \
   --win 100 \
   --overlap 10
+```
 ----
 
 ### 📦 Output
