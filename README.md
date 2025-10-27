@@ -226,4 +226,7 @@ Several utility scripts provide reusable functions for both processes:
 
 These modular functions keep the pipeline clean and reusable.
 
+## Test dataset for integration in nf-core/viralrecon pipeline
+
+https://zenodo.org/records/17454552/files/PriorCons_Test_data.zip?download=1
 
