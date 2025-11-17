@@ -338,7 +338,6 @@ def create_windows_df(windows: List[Tuple[int, int]],
         start, end = window
         # slice sequences for diagnostics
         mapp = filtered_seqs[mapp_id][start:end]
-        abacas_id = str(np.array([id for id in filtered_seqs.keys()])[np.array(["ordered" in id for id in filtered_seqs.keys()])][0])
         abacas = filtered_seqs[abacas_id][start:end]
         missing_mapp= count_missing(mapp)
         missing_abacas = count_missing(abacas)
