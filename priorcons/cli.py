@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
+# cli.py
 """
 priorCons CLI
 """
 import sys
+
 from . import __version__
 from . import build_priors as bp
 from . import integrate_consensus as ic
+from . import qc_priorcons as qc 
 
 
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
 
-    # si el usuario no da subcomando o pide --help general
+    # Si el usuario no da subcomando o pide --help general
     if len(argv) == 0 or argv[0] in ("-h", "--help"):
         print(f"""
 priorCons {__version__}
@@ -21,7 +24,8 @@ Usage:
 
 Available subcommands:
   build-priors         Build priors parquet file
-  integrate-consensus   Run consensus integration workflow
+  integrate-consensus  Run consensus integration workflow
+  qc                   Run Quality Control and post-processing 
 
 Use 'priorcons <subcommand> -h' for details on each one.
 """)
@@ -31,7 +35,7 @@ Use 'priorcons <subcommand> -h' for details on each one.
         print(f"priorcons {__version__}")
         sys.exit(0)
 
-    # delegar completamente al módulo correspondiente
+    # Delegar completamente al módulo correspondiente
     subcmd = argv[0]
     subargs = argv[1:]
 
@@ -39,6 +43,8 @@ Use 'priorcons <subcommand> -h' for details on each one.
         sys.exit(bp.main(subargs))
     elif subcmd == "integrate-consensus":
         sys.exit(ic.main(subargs))
+    elif subcmd == "qc":
+        sys.exit(qc.main(subargs)) 
     else:
         print(f"Unknown command: {subcmd}")
         print("Use 'priorcons --help' for available commands.")
