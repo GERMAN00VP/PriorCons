@@ -226,6 +226,23 @@ Several utility scripts provide reusable functions for both processes:
 
 These modular functions keep the pipeline clean and reusable.
 
+## QC ANALYSIS
+
+This tool allows also an analyis **QC**.
+
+The input is a directory with all the results folders (one for each sample) there are stored the qc files:
+
+-  input:  priorcons_path / <sample> / qc_files
+
+It also need a gtf file and an outdir.
+
+```bash
+priorcons qc --input_dir /path/to/results/PRIORCONS/ \
+             --gff_file /path/to/rsv.gff \
+             --output_dir /path/to/output_dir_plots
+```
+
+
 ## Test dataset for integration in nf-core/viralrecon pipeline
 
 https://zenodo.org/records/17454552/files/PriorCons_Test_data.zip?download=1

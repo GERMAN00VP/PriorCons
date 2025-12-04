@@ -24,7 +24,6 @@ import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import re
 
 # Import helper functions from the package modules
 from .utils_integrate_consensus import (
@@ -128,16 +127,13 @@ def main(argv: list[str] = None) -> int:
         # Write final fasta (remove '-' gaps if any)
         fin_arr = np.array(final_with_ins.split("-"))
         fin_text = "".join(fin_arr[fin_arr != ""])
-        base_name = input_path.name
-        if base_name.endswith(".aln"):
-            base_name = base_name[:-4]
+        base_name = input_path.stem
         fasta_path = output_dir / f"{base_name}-INTEGRATED.fasta"
         header = f">{base_name}-INTEGRATED\n"
         with open(fasta_path, "w") as fh:
             fh.write(header)
             fh.write(fin_text + "\n")
         logger.info("Final integrated consensus FASTA written to %s", fasta_path)
-
         # Perform QC and write qc.json
         qc_path = output_dir / "qc.json"
         qc_process(filtered_seqs=filtered_seqs, integrated_seq=cons, insertions=insertions, write=str(qc_path),ref_name=ref_id,mapp_id=mapping_key)

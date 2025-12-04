@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "priorcons"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tool for the integration of viral consensus sequences obtained by de novo and mapping strategies, supported by prior information."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -16,7 +16,10 @@ dependencies = [
   "biopython>=1.79",
   "numpy>=1.21",
   "pandas>=1.3",
-  "pyarrow>=12.0"  
+  "pyarrow>=12.0",
+  "matplotlib>=3.5", 
+  "scipy>=1.7",      
+  "seaborn>=0.11"    
 ]
 
 [project.scripts]
@@ -24,3 +27,6 @@ priorcons = "priorcons.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/GERMAN00VP/priorCons/"
+
+[tool.setuptools]
+package-data = {"priorcons" = ["data/rsv.gff"]} 

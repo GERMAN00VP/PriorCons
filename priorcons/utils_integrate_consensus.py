@@ -225,9 +225,10 @@ def add_mapping_insertions(mapp_aln: str, ref_aln: str, final_seq: str) -> Tuple
                 while pos < L and ref_aln[pos] == '-' and mapp_aln[pos] != '-':
                     ins_chars.append(mapp_aln[pos])
                     pos += 1
-                insertion = ''.join(ins_chars)
-                insertions.append((ref_pos, insertion))
-                # continue the outer loop from current pos
+                if not np.unique(np.array(ins_chars)) in ["n","N"]:
+                    insertion = ''.join(ins_chars)
+                    insertions.append((ref_pos, insertion))
+                    # continue the outer loop from current pos
                 continue
 
             # otherwise advance one column

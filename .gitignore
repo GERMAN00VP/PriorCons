@@ -1,0 +1,15 @@
+# Archivos de instalación y build
+dist/
+build/
+*.egg-info/
+
+# Entorno virtual
+venv/
+.venv/
+
+# Archivos de caché
+__pycache__/
+*.pyc
+
+# Archivos de analisis de jupyter
+priorcons/*.ipynb
