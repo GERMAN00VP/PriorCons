@@ -182,81 +182,124 @@ def qc_process(filtered_seqs: Dict[str, str],
         raise
 
 
-def add_mapping_insertions(mapp_aln: str, ref_aln: str, final_seq: str) -> Tuple[str, List[Tuple[int, str]]]:
+def add_mapping_insertions(mapp_aln: str, ref_aln: str, ref_filt: str, final_seq: str) -> Tuple[str, List[Tuple[int, str]]]:
     """
-    Detect insertions in `mapp_aln` relative to `ref_aln` (both aligned strings, with '-' gaps),
-    and insert those insertions into `final_seq` (which must be in reference coordinates, i.e. the
-    same length as the number of non-gap positions in ref_aln).
+    Detect insertions in `mapp_aln` relative to `ref_aln` and add them to `final_seq`.
+    Additionally, detect large deletions (>15 bases) in final_seq relative to ref_aln
+    and replace those deleted regions with 'N'.
+
+    - final_seq must be ungapped, in reference coordinates.
 
     Returns:
         final_with_insertions, insertions_list
-
-    Note:
-        ref_pos in insertions is 0-based index of reference base AFTER which insertion should be placed.
-        -1 means insert before the first base.
     """
     try:
-        # Basic checks
         if len(mapp_aln) != len(ref_aln):
-            raise ValueError("mapp_aln and ref_aln must have the same length (aligned with gaps).")
+            raise ValueError("Aligned strings must be same length.")
 
-        # Count non-gap positions in reference (this must match len(final_seq))
-        ref_non_gap_count = sum(1 for c in ref_aln if c != '-')
-        if len(final_seq) != ref_non_gap_count:
-            raise ValueError(
-                f"final_seq length ({len(final_seq)}) must equal number of non-gap positions in ref_aln ({ref_non_gap_count})."
-            )
+        # Count non-gap positions in the reference
+        ref_non_gap = sum(1 for c in ref_aln if c != '-')
+        if len(final_seq) != ref_non_gap:
+            raise ValueError("final_seq length must equal non-gap positions of ref_aln.")
 
-        # Collect insertions from mapp relative to ref
         insertions: List[Tuple[int, str]] = []
-        ref_pos = -1   # index in ungapped reference of the last reference base seen (-1 if none yet)
+        ref_pos = -1
         pos = 0
         L = len(ref_aln)
+        L_filt = len(ref_filt)
 
+        # --------------------------
+        # DETECT INSERTIONS
+        # --------------------------
         while pos < L:
-            # If this column is a reference base, advance the reference coordinate
             if ref_aln[pos] != '-':
                 ref_pos += 1
 
-            # If we find a run where ref has '-' but mapp has bases -> insertion in mapp
             if ref_aln[pos] == '-' and mapp_aln[pos] != '-':
-                ins_chars: List[str] = []
-                # collect contiguous insertion characters while ref_aln is '-' and mapp_aln is not '-'
+                ins_chars = []
                 while pos < L and ref_aln[pos] == '-' and mapp_aln[pos] != '-':
                     ins_chars.append(mapp_aln[pos])
                     pos += 1
-                if not np.unique(np.array(ins_chars)) in ["n","N"]:
-                    insertion = ''.join(ins_chars)
+                insertion = "".join(ins_chars)
+                if insertion.upper() != "N":  # evitar insertions spúrias de Ns
                     insertions.append((ref_pos, insertion))
-                    # continue the outer loop from current pos
                 continue
 
-            # otherwise advance one column
             pos += 1
 
-        # Group insertions by reference coordinate for efficient insertion
-        by_ref_pos: Dict[int, List[str]] = defaultdict(list)
+        # Group insertions by coordinate
+        by_ref_pos = defaultdict(list)
         for rp, seq in insertions:
-            by_ref_pos[rp].append(seq)  # keep order found (first-to-last)
+            by_ref_pos[rp].append(seq)
 
-        # Build final sequence with insertions
-        out_parts: List[str] = []
-        # Insert any sequences that belong before the first ref base (ref_pos == -1)
+        # --------------------------
+        # DETECT LARGE DELETIONS (> 15 nt)
+        # --------------------------
+        large_del_runs: List[Tuple[int, int]] = []
+        ref_pos = -1
+        pos = 0
+
+        run_start = None  # ref_aln indices where deletion begins (in reference coords)
+
+        while pos < L_filt:
+            if ref_filt[pos] != '-':
+                ref_pos += 1
+
+            # deletion occurs when reference has a base but the mapping (final sequence) lacks it
+            is_del = (ref_filt[pos] != '-') and (      # reference base exists
+                      (final_seq[pos] == '-') )       # but mapping lacks it  -> deletion
+
+            if is_del:
+                if run_start is None:
+                    run_start = ref_pos
+            else:
+                if run_start is not None:
+                    run_end = ref_pos
+                    length = run_end - run_start
+                    if length > 15:
+                        large_del_runs.append((run_start, length))
+                    run_start = None
+
+            pos += 1
+
+        # last run
+        if run_start is not None:
+            run_end = ref_pos + 1
+            length = run_end - run_start
+            if length > 15:
+                large_del_runs.append((run_start, length))
+
+        # --------------------------
+        # BUILD CONSENSUS WITH INSERTIONS + Ns FOR LARGE DELETIONS
+        # --------------------------
+        out = []
+        i = 0
+        large_del_dict = {start: length for start, length in large_del_runs}
+
         if -1 in by_ref_pos:
-            out_parts.extend(by_ref_pos[-1])
+            out.extend(by_ref_pos[-1])
 
-        # Walk through the final_seq bases and insert after each base any insertions anchored there
-        for i, base in enumerate(final_seq):
-            out_parts.append(base)
+        while i < len(final_seq):
+            # write base
+            out.append(final_seq[i])
+
+            # insert insertions
             if i in by_ref_pos:
-                out_parts.extend(by_ref_pos[i])
+                out.extend(by_ref_pos[i])
 
-        final_with_insertions = ''.join(out_parts)
-        return final_with_insertions, insertions
+            # If a large deletion begins at this reference position
+            if i in large_del_dict:
+                n_len = large_del_dict[i]
+                out.append("N" * n_len)
+
+            i += 1
+
+        return "".join(out), insertions
 
     except Exception:
         logger.exception("add_mapping_insertions failed")
         raise
+
 
 
 def create_consensus(abacas_seq: str, mapp_seq: str, window_df: pd.DataFrame) -> str:
