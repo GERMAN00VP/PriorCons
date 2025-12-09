@@ -9,6 +9,7 @@ from . import __version__
 from . import build_priors as bp
 from . import integrate_consensus as ic
 from . import qc_priorcons as qc 
+from . import complete_with_gf as gf
 
 
 def main(argv=None):
@@ -26,6 +27,7 @@ Available subcommands:
   build-priors         Build priors parquet file
   integrate-consensus  Run consensus integration workflow
   qc                   Run Quality Control and post-processing 
+  complete-gf          Run complete with GF workflow
 
 Use 'priorcons <subcommand> -h' for details on each one.
 """)
@@ -45,6 +47,8 @@ Use 'priorcons <subcommand> -h' for details on each one.
         sys.exit(ic.main(subargs))
     elif subcmd == "qc":
         sys.exit(qc.main(subargs)) 
+    elif subcmd == "complete-gf":
+        sys.exit(gf.main(subargs)) 
     else:
         print(f"Unknown command: {subcmd}")
         print("Use 'priorcons --help' for available commands.")

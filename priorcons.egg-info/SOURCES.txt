@@ -5,6 +5,7 @@ pyproject.toml
 priorcons/__init__.py
 priorcons/build_priors.py
 priorcons/cli.py
+priorcons/complete_with_gf.py
 priorcons/integrate_consensus.py
 priorcons/qc_priorcons.py
 priorcons/utils.py
