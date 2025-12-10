@@ -5,7 +5,6 @@ Command-line script to run the PriorCons pipeline.
 Usage example:
 python intgrate_consensus.py \
   --input /path/to/alignment.aln \
-  --ref REF_ID_IN_ALIGNMENT \
   --output_dir
 
 """
@@ -35,7 +34,6 @@ logger.addHandler(ch)
 def parse_args(argv=None):
     p = argparse.ArgumentParser(...)
     p.add_argument("--input", required=True, type=Path, help="Path to input alignment file (.aln)")
-    p.add_argument("--ref", required=True, type=str, help="Reference sequence ID present in the alignment file")
     p.add_argument("--output_dir", required=True, type=Path, help="Output directory to write results")
     return p.parse_args(argv)
 
@@ -45,7 +43,6 @@ def main(argv: list[str] = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     args = parse_args(argv)
     input_path: Path = args.input
-    ref_id: str = args.ref
     output_dir: Path = args.output_dir
     
     try:
@@ -69,18 +66,14 @@ def main(argv: list[str] = None) -> int:
 
         logger.info(f"Sequences loaded ids are:\n- REF: {ref_key}\n- Mapping consensus: {mapping_key}\n- GF mapping consensus: {gf_key}")
         
-        if ref_id != ref_key:
-            logger.error("Reference id '%s' not found in alignment IDs", ref_id)
-            sys.exit(2)
+
 
 
         # Create integrated consensus
         logger.info("Adding info from GF to Mapping consensus sequences")
         
-        cons_gf = add_gf(ref_seq=original_seqs[ref_key],
-                      mapp_seq=original_seqs[mapping_key],
-                      gf_seq=original_seqs[gf_key]
-        )
+        cons_gf = add_gf(mapp_seq=original_seqs[mapping_key],
+                      gf_seq=original_seqs[gf_key])
                       
 
         base_name = input_path.stem

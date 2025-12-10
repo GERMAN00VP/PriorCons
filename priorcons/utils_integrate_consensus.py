@@ -366,12 +366,11 @@ def create_consensus(abacas_seq: str, mapp_seq: str, window_df: pd.DataFrame) ->
         logger.exception("create_consensus failed")
         raise
 
-def add_gf(ref_seq: str, mapp_seq: str, gf_seq: str) -> str:
+def add_gf(mapp_seq: str, gf_seq: str) -> str:
     """
     Add info from GF sequences.
   
     Args:
-        ref_seq: reference sequence
         mapp_seq: mapping consensus sequence 
         gf_seq: GF mapping consensus sequence 
 
@@ -383,7 +382,6 @@ def add_gf(ref_seq: str, mapp_seq: str, gf_seq: str) -> str:
             raise ValueError("GF and mapp sequences must have the same length")
         
         gf_seq = gf_seq.upper()
-        ref_seq = ref_seq.upper()
         mapp_seq = mapp_seq.upper()
 
         seq_length = len(gf_seq)
@@ -392,24 +390,12 @@ def add_gf(ref_seq: str, mapp_seq: str, gf_seq: str) -> str:
         # Process each window
         for pos in range(seq_length):
             GF = gf_seq[pos]
-            REF = ref_seq[pos]
             MAPP= mapp_seq[pos]
 
-            if GF=="-":
-                if "-" in [REF,MAPP]:# IF THERE IS A DELETION DONT ADD SEQUENCE
-                    continue
-                else:# IF THERE WAS NO RECORD FOR GF IN THIS POS, USE MAPPING
-                    new_seq+=MAPP
-              
-            elif  GF == "N" : # IF THERE IS AN UNKNOWN BASE
-                if MAPP in "ACGT": # AND IT WAS IDENTIFIED IN MAPPING
-                    new_seq+=MAPP # ADD IT
-                else:
-                    new_seq+="N" # KEEP THE UNCERTAINITY
-
-            else: # IF GF CONTAINS USEFULL INFO
-                new_seq+=GF # ADD IT
-
+            if MAPP=="N" and GF not in "-N":
+                new_seq+=GF
+            else:
+                new_seq+=MAPP
         return new_seq
 
     except Exception:
