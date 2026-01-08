@@ -182,81 +182,133 @@ def qc_process(filtered_seqs: Dict[str, str],
         raise
 
 
-def add_mapping_insertions(mapp_aln: str, ref_aln: str, final_seq: str) -> Tuple[str, List[Tuple[int, str]]]:
+def add_mapping_insertions(mapp_aln: str, ref_aln: str, ref_filt: str, final_seq: str):
     """
-    Detect insertions in `mapp_aln` relative to `ref_aln` (both aligned strings, with '-' gaps),
-    and insert those insertions into `final_seq` (which must be in reference coordinates, i.e. the
-    same length as the number of non-gap positions in ref_aln).
+    Detect insertions in mapp_aln relative to ref_aln and add them to final_seq.
+    Also detect large deletions (>15 nt) but ONLY based on real reference coords,
+    avoiding false N insertions caused by index mismatch.
+
+    final_seq must be ungapped, in the coordinates of ref_filt.
 
     Returns:
-        final_with_insertions, insertions_list
-
-    Note:
-        ref_pos in insertions is 0-based index of reference base AFTER which insertion should be placed.
-        -1 means insert before the first base.
+        final_with_insertions, insertion_list
     """
-    try:
-        # Basic checks
-        if len(mapp_aln) != len(ref_aln):
-            raise ValueError("mapp_aln and ref_aln must have the same length (aligned with gaps).")
+    from collections import defaultdict
 
-        # Count non-gap positions in reference (this must match len(final_seq))
-        ref_non_gap_count = sum(1 for c in ref_aln if c != '-')
-        if len(final_seq) != ref_non_gap_count:
-            raise ValueError(
-                f"final_seq length ({len(final_seq)}) must equal number of non-gap positions in ref_aln ({ref_non_gap_count})."
-            )
+    # 1) Validaciones básicas
+    if len(mapp_aln) != len(ref_aln):
+        raise ValueError("Aligned strings must be same length.")
 
-        # Collect insertions from mapp relative to ref
-        insertions: List[Tuple[int, str]] = []
-        ref_pos = -1   # index in ungapped reference of the last reference base seen (-1 if none yet)
-        pos = 0
-        L = len(ref_aln)
+    ref_non_gap = sum(1 for c in ref_aln if c != "-")
+    if len(final_seq) != ref_non_gap:
+        raise ValueError("final_seq must match non-gap positions of ref_aln")
 
-        while pos < L:
-            # If this column is a reference base, advance the reference coordinate
-            if ref_aln[pos] != '-':
-                ref_pos += 1
+    L = len(ref_aln)
 
-            # If we find a run where ref has '-' but mapp has bases -> insertion in mapp
-            if ref_aln[pos] == '-' and mapp_aln[pos] != '-':
-                ins_chars: List[str] = []
-                # collect contiguous insertion characters while ref_aln is '-' and mapp_aln is not '-'
-                while pos < L and ref_aln[pos] == '-' and mapp_aln[pos] != '-':
-                    ins_chars.append(mapp_aln[pos])
-                    pos += 1
-                if not np.unique(np.array(ins_chars)) in ["n","N"]:
-                    insertion = ''.join(ins_chars)
-                    insertions.append((ref_pos, insertion))
-                    # continue the outer loop from current pos
-                continue
+    # ----------------------------------------------------------------------
+    # 2) DETECTAR INSERTIONS (ok en tu versión original)
+    # ----------------------------------------------------------------------
+    insertions = []
+    ref_pos = -1
+    pos = 0
 
-            # otherwise advance one column
-            pos += 1
+    while pos < L:
+        if ref_aln[pos] != "-":
+            ref_pos += 1
 
-        # Group insertions by reference coordinate for efficient insertion
-        by_ref_pos: Dict[int, List[str]] = defaultdict(list)
-        for rp, seq in insertions:
-            by_ref_pos[rp].append(seq)  # keep order found (first-to-last)
+        if ref_aln[pos] == "-" and mapp_aln[pos] != "-":
+            run = []
+            while pos < L and ref_aln[pos] == "-" and mapp_aln[pos] != "-":
+                run.append(mapp_aln[pos])
+                pos += 1
+            seq = "".join(run)
+            if seq.upper() != "N" and len(seq)<=15:
+                insertions.append((ref_pos, seq))
+            continue
+        pos += 1
 
-        # Build final sequence with insertions
-        out_parts: List[str] = []
-        # Insert any sequences that belong before the first ref base (ref_pos == -1)
-        if -1 in by_ref_pos:
-            out_parts.extend(by_ref_pos[-1])
+    by_ref_pos = defaultdict(list)
+    for rp, seq in insertions:
+        by_ref_pos[rp].append(seq)
 
-        # Walk through the final_seq bases and insert after each base any insertions anchored there
-        for i, base in enumerate(final_seq):
-            out_parts.append(base)
-            if i in by_ref_pos:
-                out_parts.extend(by_ref_pos[i])
+    # ----------------------------------------------------------------------
+    # 3) DETECCIÓN DE DELECIONES GRANDES *CORRECTA*
+    # ----------------------------------------------------------------------
+    # Construimos un mapa:
+    # ref_coord -> final_seq_index
+    # usando ref_aln (la única que sabe dónde hay gaps en la ref original)
 
-        final_with_insertions = ''.join(out_parts)
-        return final_with_insertions, insertions
+    ref_to_final = {}
+    ref_i = -1
+    final_i = 0
 
-    except Exception:
-        logger.exception("add_mapping_insertions failed")
-        raise
+    for c in ref_aln:
+        if c != "-":
+            ref_i += 1
+            ref_to_final[ref_i] = final_i
+            final_i += 1
+
+    # Ahora recorremos ref_filt (que está en coords de ref original sin gaps)
+    large_del = []
+
+    ref_coord = -1
+    in_run = None
+
+    for i, base in enumerate(ref_filt):
+        if base == "-":
+            continue  # ref_filt no debería tener -, pero por si acaso
+
+        ref_coord += 1
+
+        # index real en final_seq
+        fx = ref_to_final[ref_coord]
+
+        # deleción si final_seq tiene '-'
+        is_del = final_seq[fx] == "-"
+
+        if is_del:
+            if in_run is None:
+                in_run = ref_coord
+        else:
+            if in_run is not None:
+                length = ref_coord - in_run
+                if length > 15:
+                    large_del.append((in_run, length))
+                in_run = None
+
+    # cierre final
+    if in_run is not None:
+        length = ref_coord - in_run + 1
+        if length > 15:
+            large_del.append((in_run, length))
+
+    large_del = dict(large_del)
+
+    # ----------------------------------------------------------------------
+    # 4) RECONSTRUIR SECUENCIA FINAL
+    # ----------------------------------------------------------------------
+    out = []
+
+    if -1 in by_ref_pos:
+        out.extend(by_ref_pos[-1])
+
+    for ref_coord in range(len(ref_to_final)):
+        fx = ref_to_final[ref_coord]
+
+        # base real
+        out.append(final_seq[fx])
+
+        # inserciones
+        if ref_coord in by_ref_pos:
+            out.extend(by_ref_pos[ref_coord])
+
+        # grandes deleciones
+        if ref_coord in large_del:
+            out.append("N" * large_del[ref_coord])
+
+    return "".join(out), insertions
+
+
 
 
 def create_consensus(abacas_seq: str, mapp_seq: str, window_df: pd.DataFrame) -> str:

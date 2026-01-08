@@ -122,6 +122,7 @@ def main(argv: list[str] = None) -> int:
         logger.info("Detecting and re-inserting mapping consensus insertions removed by filtering")
         final_with_ins, insertions = add_mapping_insertions(mapp_aln=original_seqs[mapping_key],
                                                          ref_aln=original_seqs[ref_id],
+                                                         ref_filt = filtered_seqs[ref_id],
                                                          final_seq=cons)
 
         # Write final fasta (remove '-' gaps if any)
