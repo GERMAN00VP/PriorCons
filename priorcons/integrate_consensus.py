@@ -129,8 +129,8 @@ def main(argv: list[str] = None) -> int:
         fin_arr = np.array(final_with_ins.split("-"))
         fin_text = "".join(fin_arr[fin_arr != ""])
         base_name = input_path.stem
-        fasta_path = output_dir / f"{base_name}-INTEGRATED.fasta"
-        header = f">{base_name}-INTEGRATED\n"
+        fasta_path = output_dir / f"integrated_consensus.fasta"
+        header = f">{base_name}\n"
         with open(fasta_path, "w") as fh:
             fh.write(header)
             fh.write(fin_text + "\n")

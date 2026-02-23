@@ -26,8 +26,6 @@ Usage:
 Available subcommands:
   build-priors         Build priors parquet file
   integrate-consensus  Run consensus integration workflow
-  qc                   Run Quality Control and post-processing 
-  complete-gf          Run complete with GF workflow
 
 Use 'priorcons <subcommand> -h' for details on each one.
 """)
@@ -45,10 +43,6 @@ Use 'priorcons <subcommand> -h' for details on each one.
         sys.exit(bp.main(subargs))
     elif subcmd == "integrate-consensus":
         sys.exit(ic.main(subargs))
-    elif subcmd == "qc":
-        sys.exit(qc.main(subargs)) 
-    elif subcmd == "complete-gf":
-        sys.exit(gf.main(subargs)) 
     else:
         print(f"Unknown command: {subcmd}")
         print("Use 'priorcons --help' for available commands.")
