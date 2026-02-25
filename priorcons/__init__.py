@@ -4,7 +4,7 @@ Author: Germán Vallejo Palma
 Developed at: Instituto de Salud Carlos III - National Centre of Microbiology
 """
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = "Germán Vallejo Palma"
 __email__ = "german.vallejo@isciii.es"
 
