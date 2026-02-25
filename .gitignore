@@ -1,7 +1,7 @@
 # Archivos de instalación y build
 dist/
 build/
-*.egg-info/
+priorcons.egg-info/
 
 # Entorno virtual
 venv/

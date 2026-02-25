@@ -8,8 +8,7 @@ import sys
 from . import __version__
 from . import build_priors as bp
 from . import integrate_consensus as ic
-from . import qc_priorcons as qc 
-from . import complete_with_gf as gf
+
 
 
 def main(argv=None):
